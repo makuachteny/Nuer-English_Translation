@@ -1,0 +1,4 @@
+#Ignoore the .venv folder
+.venv/
+
+transenv/
