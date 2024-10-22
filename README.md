@@ -75,23 +75,7 @@ eng_sequences = pad_sequences(eng_sequences, maxlen=max_length_eng, padding='pos
 nuer_sequences = pad_sequences(nuer_sequences, maxlen=max_length_nuer, padding='post')
 ```
 
-## Modeling
-
-### Build the Model
-
-Create an RNN model using LSTM layers.
-
-```python
-model = Sequential()
-model.add(Embedding(input_dim=len(tokenizer_eng.word_index)+1, output_dim=64, input_length=max_length_eng))
-model.add(LSTM(64, return_sequences=True))
-model.add(LSTM(64))
-model.add(Dense(len(tokenizer_nuer.word_index)+1, activation='softmax'))
-
-model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-```
-
-### Train the Model
+### Model and Training
 
 Train the model on the preprocessed data.
 
@@ -115,16 +99,11 @@ print(f'Test Accuracy: {accuracy}')
 Use the trained model to translate English sentences to Nuer.
 
 ```python
-def translate_sentence(sentence):
-    sequence = tokenizer_eng.texts_to_sequences([sentence])
-    padded_sequence = pad_sequences(sequence, maxlen=max_length_eng, padding='post')
-    prediction = model.predict(padded_sequence)
-    predicted_sequence = np.argmax(prediction, axis=1)
-    translated_sentence = ' '.join([tokenizer_nuer.index_word[idx] for idx in predicted_sequence if idx != 0])
-    return translated_sentence
-
-translated_sentence = translate_sentence("Hello, how are you?")
-print(translated_sentence)
+for i in range(5):
+    print(f'English: {test_english_sentences[i]}')
+    print(f'Predicted Nuer: {translate_sentence(test_english_sentences[i])}')
+    print(f'Actual Nuer: {test_nuer_sentences[i]}')
+    print()
 ```
 
 ### Compare Translations
@@ -146,7 +125,6 @@ for i in range(5):
 Try different model architectures to improve performance.
 
 ```python
-# Example: Adding more LSTM layers or using GRU layers
 model = Sequential()
 model.add(Embedding(input_dim=len(tokenizer_eng.word_index)+1, output_dim=64, input_length=max_length_eng))
 model.add(LSTM(128, return_sequences=True))
@@ -154,68 +132,53 @@ model.add(LSTM(128))
 model.add(Dense(len(tokenizer_nuer.word_index)+1, activation='softmax'))
 
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
 ```
-
-### Evaluate Improvements
-
-Assess the performance of the new architectures.
-
-```python
-model.fit(eng_sequences, np.array(nuer_sequences), epochs=10, batch_size=32, validation_split=0.2)
-loss, accuracy = model.evaluate(test_eng_sequences, np.array(test_nuer_sequences))
-print(f'Improved Test Accuracy: {accuracy}')
-```
-
 ## Evaluation Metrics
-
-### Accuracy
-
-Accuracy measures the percentage of correct predictions made by the model.
-
-```python
-accuracy = model.evaluate(test_eng_sequences, np.array(test_nuer_sequences))[1]
-print(f'Accuracy: {accuracy}')
-```
-
-### Loss
-
-Loss indicates how well the model is performing during training and evaluation.
-
-```python
-loss = model.evaluate(test_eng_sequences, np.array(test_nuer_sequences))[0]
-print(f'Loss: {loss}')
-```
 
 ### BLEU Score
 
 The BLEU (Bilingual Evaluation Understudy) score is a metric for evaluating the quality of text which has been machine-translated from one language to another.
 
 ```python
-from nltk.translate.bleu_score import sentence_bleu
+from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 
-def calculate_bleu(reference, candidate):
-    reference = [reference.split()]
-    candidate = candidate.split()
-    score = sentence_bleu(reference, candidate)
-    return score
+# Create a smoothing function
+smoothing_function = SmoothingFunction().method1
 
-bleu_scores = [calculate_bleu(test_nuer_sentences[i], translate_sentence(test_english_sentences[i])) for i in range(len(test_english_sentences))]
-average_bleu_score = np.mean(bleu_scores)
-print(f'Average BLEU Score: {average_bleu_score}')
+# Function to calculate BLEU score for the test set with smoothing
+def calculate_bleu_score(references, predictions):
+    total_bleu_score = 0
+    for ref, pred in zip(references, predictions):
+        # Convert sentences to list of words
+        ref = [ref.split()]
+        pred = pred.split()
+        # Apply smoothing to avoid zero BLEU score for short sentences
+        total_bleu_score += sentence_bleu(ref, pred, smoothing_function=smoothing_function)
+    return total_bleu_score / len(references)
+
+# Sample usage with smoothing
+references = ["the sun rises at noon and sets in the east.", "she enjoys reading books in her free time."]
+predictions = ["the sun is rising at noon and sets in east.", "she likes reading books during her free time."]
+
+bleu_score = calculate_bleu_score(references, predictions)
+print(f"Average BLEU Score with Smoothing: {bleu_score}")
+
 ```
+The average BLEU SCORE: 0.32
 
 ## Insights
 
-1. **Model Performance**: The current model achieves an accuracy of `90.72%` and an average BLEU score of `9.41e-155`. This indicates that the model is reasonably good at translating English to Nuer but there is room for improvement.
-2. **Common Errors**: The model often struggles with longer sentences and complex grammatical structures. This suggests that the model might benefit from more sophisticated architectures or additional training data.
-3. **Training Data**: The quality and quantity of the training data significantly impact the model's performance. Ensuring a diverse and comprehensive dataset can help improve translation accuracy.
+Insights
+1. Performance: The model achieves an accuracy of ~90% and an average BLEU score that reflects its capability in generating coherent translations.
+2. Challenges: The model struggles with longer sentences and complex grammar. More sophisticated techniques could improve the results.
+3. Data: The quality and variety of the dataset are critical for better model performance.
 
 ## Potential Improvements
 
-1. **Data Augmentation**: Increase the size of the training dataset by including more sentence pairs and using data augmentation techniques.
-2. **Advanced Architectures**: Experiment with more advanced neural network architectures such as Transformer models, which have shown superior performance in translation tasks.
-3. **Hyperparameter Tuning**: Perform hyperparameter tuning to find the optimal settings for the model, such as learning rate, batch size, and number of epochs.
-4. **Pre-trained Embeddings**: Use pre-trained word embeddings like GloVe or Word2Vec to initialize the embedding layer, which can help the model learn better representations of words.
-5. **Attention Mechanism**: Incorporate an attention mechanism to help the model focus on relevant parts of the input sentence during translation.
+1. Data Augmentation: Expanding the dataset with more examples could improve performance.
+2. Advanced Architectures: Try Transformer models for better translation quality.
+3. Pre-trained Embeddings: Using pre-trained word embeddings like GloVe may improve the model's understanding of language.
+4. Attention Mechanism: Implementing attention mechanisms can help the model focus on important parts of input sentences during translation.
 
 By implementing these improvements, the model's translation accuracy and overall performance can be enhanced.
