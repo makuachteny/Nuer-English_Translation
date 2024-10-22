@@ -1,4 +1,5 @@
 #Ignoore the .venv folder
 .venv/
 
+#Ignore the transenv environment
 transenv/
