@@ -195,7 +195,7 @@ The average BLEU SCORE: 0.32
 ## Insights
 
 Insights
-1. Performance: The model achieves an accuracy of ~90% and an average BLEU score that reflects its capability in generating coherent translations.
+1. Performance: It has an average BLEU score that reflects its capability in generating coherent translations.
 2. Challenges: The model struggles with longer sentences and complex grammar. More sophisticated techniques could improve the results.
 3. Data: The quality and variety of the dataset are critical for better model performance.
 
